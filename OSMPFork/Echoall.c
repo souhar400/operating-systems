@@ -12,6 +12,6 @@ int main(int argc, char** argv){
    for(int i = 0; i < argc; i++){
         printf("%s\n", argv[i]);
     }
-    printf("From Child process: %d\n", cpid);
+    printf("This was from Child process: %d\n\n", cpid);
     return 0;
 }

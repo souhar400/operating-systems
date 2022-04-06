@@ -14,5 +14,11 @@ include_directories(.)
 
 add_executable(Fork OSMPFork/OSMPFork.c)
 add_executable(Echoall OSMPFork/Echoall.c)
-
 add_executable(Demo demo.c)
+
+add_executable(SimpleFork experimente/simplesFork/fork.c)
+add_executable(ZweiFork experimente/zweimalfork/zweifork.c)
+add_executable(Aufgabe2 experimente/Aufgabe2/aufgabe2.c)
+add_executable(Aufgabe3 experimente/Aufgabe3/aufgabe3.c)
+add_executable(LokGlobMem experimente/lok_glob_mem/lokglobmem.c)
+add_executable(Execl_exp experimente/exec/execl_exp.c)
