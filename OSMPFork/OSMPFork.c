@@ -16,7 +16,7 @@
 int main(){
     pid_t pid, wpid;
     int wstatus;
-    char *envp[] = {"PATH=/home/lukas/CLionProjects/grp28/lib", NULL};
+    char *envp[] = {"PATH=/home/ms/l/lw874718/CLionProjects/grp28/lib", NULL};
     char *argp[] = {"execv*", "tests", NULL};
     for(int i = 0; i < 6; i++) {
         pid = fork();
@@ -28,7 +28,7 @@ int main(){
         if (pid == 0) {
             switch (i) {
                 case 0:
-                    execl("/home/lukas/CLionProjects/grp28/lib/Echoall",
+                    execl("/home/ms/l/lw874718/CLionProjects/grp28/lib/Echoall",
                           "execl", "test1", "letztes Argument", NULL);
                     break;
                 case 1:
@@ -38,7 +38,7 @@ int main(){
                     execle("Echoall","execle", "test3", NULL, envp);
                     break;
                 case 3:
-                    execv("/home/lukas/CLionProjects/grp28/lib/Echoall", argp);
+                    execv("/home/ms/l/lw874718/CLionProjects/grp28/lib/Echoall", argp);
                     break;
                 case 4:
                     execve("Echoall", argp, envp);

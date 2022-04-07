@@ -10,12 +10,13 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/bin)
 
 include_directories(.)
-#link_libraries(rt)
+link_libraries(rt)
 
 add_executable(Fork OSMPFork/OSMPFork.c)
 add_executable(Echoall OSMPFork/Echoall.c)
 add_executable(Demo demo.c)
-
+add_executable(OSMPRun OSMPRun/OSMPRun.c)
+add_executable(OSMPExecutable OSMPRun/OSMPExecutable.c)
 add_executable(SimpleFork experimente/simplesFork/fork.c)
 add_executable(ZweiFork experimente/zweimalfork/zweifork.c)
 add_executable(Aufgabe2 experimente/Aufgabe2/aufgabe2.c)
