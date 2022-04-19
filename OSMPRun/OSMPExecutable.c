@@ -18,21 +18,15 @@
 #define UNLINKERR 16
 #define MUNMAPERR 17
 
-int main(){
-    int fd, rv;
-    char buf[1024];
-    fd = shm_open("/shared_memory", O_RDWR, 0777);
-    void * ptr=NULL;
-    if((ptr= mmap(NULL, 4096, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_SHARED, fd, 0)) == MAP_FAILED){
-        fprintf(stderr, "%s\n", strerror(errno));
-        exit(MMAPERR);
-    }
+#include "lib/OSMP.h"
 
-    printf("%s\n", (char *) ptr);
-
-    if((rv =munmap(ptr, 4096)) == -1){
-        fprintf(stderr, "%s\n", strerror(errno));
-        exit(MUNMAPERR);
-    }
-
+int main(int argc, char *argv[]) {
+    int rank = 0, size = 0;
+    OSMP_Init(&argc, &argv);
+    OSMP_Rank(&rank);
+    OSMP_Size(&size);
+    printf("RANK %d \n", rank);
+    printf("Size %d \n\n", size);
+    OSMP_Finalize();
+    return 0;
 }
