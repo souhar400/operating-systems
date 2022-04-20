@@ -13,22 +13,14 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 
-#include "lib/datastructs.h"
+#include "lib/OSMP.h"
 #include "osmprun.h"
 
-#define FORKERR 10
-#define EXECERR 11
-#define WAITERR 12
-#define SHMOPENERR 13
-#define FTRUNCERR 14
-#define MMAPERR 15
-#define UNLINKERR 16
-#define MUNMAPERR 17
 
 int main(int argc, char *argv[]){
     errno=0;
     printf (" Die Anzahl der Argumente ist %d\n", argc);
-    if (argc < 3) {
+    if (argc < 2) {
         fprintf(stderr, "\n Error: Zu wenige Argumente...\n\n");
         exit(EXIT_FAILURE);
     }
@@ -53,7 +45,7 @@ int main(int argc, char *argv[]){
      * Command: ./OSMPRun pr_zahl my_program name_of_shared_memory
      */
     int fd;
-    if ((fd = shm_open(argv[3], O_CREAT | O_EXCL | O_RDWR, 0777)) == -1) {
+    if ((fd = shm_open(OSMP_SHM_NAME, O_CREAT | O_RDWR, 0777)) == -1) {
         fprintf(stderr, "%s\n", strerror(errno));
         exit(SHMOPENERR);
     }
@@ -76,7 +68,7 @@ int main(int argc, char *argv[]){
     mem->shm_size = memSize;
     mem->size=numProc;
 
-    char *params[] = {argv[3], NULL};
+    char *params[] = {OSMP_SHM_NAME, NULL};
 
 
     for (int i = 0; i < numProc; i++) {
@@ -121,7 +113,7 @@ int main(int argc, char *argv[]){
         exit(MUNMAPERR);
     }
 
-    if (shm_unlink(argv[3]) == -1) {
+    if (shm_unlink(OSMP_SHM_NAME) == -1) {
         fprintf(stderr, "%s\n", strerror(errno));
         exit(UNLINKERR);
     }

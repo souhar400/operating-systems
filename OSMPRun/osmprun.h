@@ -5,7 +5,7 @@
 #ifndef OSMP_OSMPRUN_H
 #define OSMP_OSMPRUN_H
 
-#include "lib/datastructs.h"
+#include "lib/OSMP.h"
 
 #define MAXARGS 100
 

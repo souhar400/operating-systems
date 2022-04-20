@@ -2,15 +2,7 @@
 // Created by studi on 19.04.22.
 //
 
-#include "OSMP.h"
-#define FORKERR 10
-#define EXECERR 11
-#define WAITERR 12
-#define SHMOPENERR 13
-#define FTRUNCERR 14
-#define MMAPERR 15
-#define UNLINKERR 16
-#define MUNMAPERR 17
+#include "OSMPlib.h"
 
 
 struct parameters *param;
@@ -30,7 +22,7 @@ int OSMP_Init(const int *argc, char ***argv) {
     }
 
     // Init/Create the shared memory object.
-    if ((fd = shm_open(*argv[0], O_RDWR, 0777)) == OSMP_ERROR) {
+    if ((fd = shm_open(OSMP_SHM_NAME, O_RDWR, 0777)) == OSMP_ERROR) {
         fprintf(stderr, "%s\n", strerror(errno));
         exit(SHMOPENERR);
     }

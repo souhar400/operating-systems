@@ -9,18 +9,8 @@
 #include <sys/wait.h>
 #include <sys/mman.h>
 #include <fcntl.h>
-#define FORKERR 10
-#define EXECERR 11
 
-
-#define WAITERR 12
-#define SHMOPENERR 13
-#define FTRUNCERR 14
-#define MMAPERR 15
-#define UNLINKERR 16
-#define MUNMAPERR 17
-
-#include "lib/OSMP.h"
+#include "lib/OSMPlib.h"
 
 int main(int argc, char *argv[]) {
     int rank = 0, size = 0;

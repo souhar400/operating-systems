@@ -13,9 +13,9 @@ include_directories(.)
 link_libraries(rt)
 
 add_executable(Echoall OSMPFork/Echoall.c)
-add_executable(Demo demo.c lib/OSMP.h)
-add_executable(OSMPRun OSMPRun/OSMPRun.c lib/OSMP.h lib/OSMPlib.c)
-add_executable(OSMPExecutable OSMPRun/OSMPExecutable.c lib/OSMP.h lib/OSMPlib.c)
+add_executable(Demo demo.c lib/OSMPlib.h)
+add_executable(OSMPRun OSMPRun/OSMPRun.c lib/OSMPlib.h lib/OSMPlib.c)
+add_executable(OSMPExecutable OSMPRun/OSMPExecutable.c lib/OSMPlib.h lib/OSMPlib.c)
 
 
 target_link_libraries(OSMPRun -lrt)
