@@ -4,14 +4,11 @@
 // ./OSMPRun pr_zahl my_program argt
 //
 
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <sys/mman.h>
-#include <fcntl.h>
+/**
+ * GDB CHEAT SHEET
+ * set detach-on-fork off
+ * set follow-fork-mode child
+ */
 
 #include "lib/OSMP.h"
 #include "osmprun.h"
@@ -21,23 +18,18 @@ int main(int argc, char *argv[]){
     errno=0;
     printf (" Die Anzahl der Argumente ist %d\n", argc);
     if (argc < 2) {
-        fprintf(stderr, "\n Error: Zu wenige Argumente...\n\n");
-        exit(EXIT_FAILURE);
+        ERROR_ROUTINE( EXIT_FAILURE, "Error: Zu wenig Argumente\n")
     }
-
     char *endptr = NULL;
     int numProc = (int) strtol(argv[1], &endptr, 10);
     if (errno != 0 || !numProc || *endptr) {
-        fprintf(stderr, "\n Error: Nicht gültige Processzahl\n\n");
-        exit(EXIT_FAILURE);
+        ERROR_ROUTINE(EXIT_FAILURE, "\n Error: Nicht gültige Processzahl\n\n")
     }
     if (numProc > OSMP_MAX_PROCESSES) {
-        fprintf(stderr, "\n Error: Maximale Processzahl überschritten \n\n");
-        exit(EXIT_FAILURE);
+        ERROR_ROUTINE(EXIT_FAILURE, "\n Error: Maximale Processzahl überschritten \n\n")
     }
     if (numProc < 1) {
-        fprintf(stderr, "\n Error: Processzahl ist kleiner 1\n\n");
-        exit(EXIT_FAILURE);
+        ERROR_ROUTINE(EXIT_FAILURE, "\n Error: Processzahl ist kleiner 1\n\n")
     }
 
     /**
@@ -46,22 +38,19 @@ int main(int argc, char *argv[]){
      */
     int fd;
     if ((fd = shm_open(OSMP_SHM_NAME, O_CREAT | O_RDWR, 0777)) == -1) {
-        fprintf(stderr, "%s\n", strerror(errno));
-        exit(SHMOPENERR);
+        ERROR_ROUTINE(SHMOPENERR, "%s\n", strerror(errno))
     }
 
     off_t memSize = (off_t) (sizeof(struct shared_memory));
 
     if (ftruncate(fd, memSize) == -1) {
-        fprintf(stderr, "%s\n", strerror(errno));
-        exit(FTRUNCERR);
+        ERROR_ROUTINE(FTRUNCERR, "%s\n", strerror(errno))
     }
 
     void *addr = NULL;
     // Map the shared memory object.
     if ((addr = mmap(NULL, (size_t) memSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED) {
-        fprintf(stderr, "%s\n", strerror(errno));
-        exit(MMAPERR);
+        ERROR_ROUTINE(MMAPERR, "%s\n", strerror(errno))
     }
 
     struct shared_memory *mem = (struct shared_memory *) addr;
@@ -74,14 +63,12 @@ int main(int argc, char *argv[]){
     for (int i = 0; i < numProc; i++) {
         pid_t child_pid = fork();
         if (child_pid < (pid_t) 0) {
-            fprintf(stderr, "%s\n", strerror(errno));
-            exit(FORKERR);
+            ERROR_ROUTINE(FORKERR, "%s\n", strerror(errno))
         }
         if (child_pid == (pid_t) 0) {
             initChild(mem, i);
             execv(argv[2], params);
-            fprintf(stderr, "%s\n", strerror(errno));
-            exit(EXECERR);
+            ERROR_ROUTINE(EXECERR, "%s\n", strerror(errno))
         }
         sleep(1);
     }
@@ -93,8 +80,7 @@ int main(int argc, char *argv[]){
         w = waitpid(-1, &status, WUNTRACED | WCONTINUED);
 
         if (w == -1) {
-            perror("waitpid");
-            exit(EXIT_FAILURE);
+            ERROR_ROUTINE(WAITERR, "%s\n", strerror(errno))
         }
 
         if (WIFEXITED(status)) {//WIFEXITED: returns true if the child terminated normally, that is, by calling exit(3) or _exit(2), or by returning from main().
@@ -109,13 +95,11 @@ int main(int argc, char *argv[]){
     }
 
     if (munmap(addr, (size_t) memSize) == -1) {
-        fprintf(stderr, "%s\n", strerror(errno));
-        exit(MUNMAPERR);
+        ERROR_ROUTINE(MUNMAPERR, "%s\n", strerror(errno))
     }
 
     if (shm_unlink(OSMP_SHM_NAME) == -1) {
-        fprintf(stderr, "%s\n", strerror(errno));
-        exit(UNLINKERR);
+        ERROR_ROUTINE(UNLINKERR, "%s\n", strerror(errno))
     }
 
 

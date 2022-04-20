@@ -1,14 +1,6 @@
 //
 // Created by lw874718 on 07.04.22.
 //
-#include <unistd.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <sys/mman.h>
-#include <fcntl.h>
 
 #include "lib/OSMPlib.h"
 

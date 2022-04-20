@@ -14,6 +14,7 @@
 #include <sys/stat.h>
 #include <sys/wait.h>
 #include <fcntl.h>
+#include <semaphore.h>
 
 #define OSMP_MAX_MESSAGES_PROC   16 // maximale Zahl der Nachrichten pro Prozess
 #define OSMP_MAX_SLOTS           256 // maximale Anzahl der Nachrichten, die insgesamt vorhanden sein dürfen
@@ -30,8 +31,11 @@
 #define MUNMAPERR 17
 
 #define OSMP_SHM_NAME "OSMP_sh_mem"
+#define ERROR_ROUTINE(code, format...) fprintf(stderr, format); \
+                                    exit(code);
 
 //Aufzählung für den Datentyp
+//size festlegen, dann easy cast auf den Datentyp
 typedef enum {
     osmp_short,
     osmp_int,
@@ -47,27 +51,36 @@ typedef enum {
 
 struct parameters {
     int size;
-    int *shm_pointer;
+    int *shm_pointer; //int ? struct shared_memory* no?
     int rank;
 };
 
 struct message {
     int sender_pr_rank;
-    int receiver_pr_rank;
+    int receiver_pr_rank; //braucht man das?
     int elt_zahl;
     int msg_len;
     OSMP_Datatype elt_datentyp;
+    void *payload[OSMP_MAX_PAYLOAD_LENGTH];
 };
 
 struct process {
-    int pid;
+    int pid; // braucht man des?
     int rank;
-    int messages_zahl;
+    int messages_zahl; // und des?
+    int read_index;
+    int write_index;
+    sem_t proc_mutex;
+    sem_t max_msg;
+    sem_t no_msg;
+    int msg_slot[OSMP_MAX_MESSAGES_PROC];
 };
 
 struct shared_memory {
+    sem_t shm_mutex;
+    sem_t free_slots;
     off_t shm_size;
-    int available_messages;
+    int available_message_slot;
     int size;
     struct process processes[OSMP_MAX_PROCESSES];
     struct message messages[OSMP_MAX_SLOTS];
