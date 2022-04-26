@@ -60,4 +60,10 @@ int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *le
  * @return OSMP_SUCCESS on success otherwise OSMP_ERROR.
  */
 int OSMP_Finalize(void);
+/**
+ * Kapselung der systemroutinen
+ * @param sem der Semaphore zur Inkrementierung/dekrementierung
+ */
+void OSMP_wait(sem_t *sem);
+void OSMP_signal(sem_t *sem);
 #endif //OSMP_OSMPLIB_H

@@ -92,3 +92,15 @@ int OSMP_Finalize(void) {
     }
     return OSMP_SUCCESS;
 }
+void OSMP_wait(sem_t *sem){
+    int rv = sem_wait(sem);
+    if(rv == -1){
+        ERROR_ROUTINE(SEMERR)
+    }
+}
+void OSMP_signal(sem_t *sem){
+    int rv = sem_post(sem);
+    if(rv == -1){
+        ERROR_ROUTINE(SEMERR)
+    }
+}

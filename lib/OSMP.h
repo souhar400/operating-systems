@@ -29,13 +29,15 @@
 #define MMAPERR 15
 #define UNLINKERR 16
 #define MUNMAPERR 17
+#define SEMERR 18
 
 #define OSMP_SHM_NAME "OSMP_sh_mem"
-#define ERROR_ROUTINE(code, format...) fprintf(stderr, format); \
+#define ERROR_ROUTINE(code) fprintf(stderr, "%s\n", strerror(errno)); \
+                                    exit(code);
+#define ERROR_ROUTINE2(code, format, str) fprintf(stderr, format, str); \
                                     exit(code);
 
 //Aufzählung für den Datentyp
-//size festlegen, dann easy cast auf den Datentyp
 typedef enum {
     osmp_short,
     osmp_int,
@@ -65,9 +67,7 @@ struct message {
 };
 
 struct process {
-    int pid; // braucht man des?
     int rank;
-    int messages_zahl; // und des?
     int read_index;
     int write_index;
     sem_t proc_mutex;
@@ -82,8 +82,8 @@ struct shared_memory {
     off_t shm_size;
     int available_message_slot;
     int size;
-    struct process processes[OSMP_MAX_PROCESSES];
     struct message messages[OSMP_MAX_SLOTS];
+    struct process processes[OSMP_MAX_PROCESSES];
 };
 
 #endif //OSMP_OSMP_H

@@ -174,6 +174,6 @@ _deps
 
 # End of https://www.gitignore.io/api/c,linux,cmake,clion+all
 
-#/bin
+/bin
 #/lib
 /build

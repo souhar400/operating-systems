@@ -12,24 +12,26 @@
 
 #include "lib/OSMP.h"
 #include "osmprun.h"
+#include "lib/OSMPlib.h"
 
 
 int main(int argc, char *argv[]){
     errno=0;
     printf (" Die Anzahl der Argumente ist %d\n", argc);
+
     if (argc < 2) {
-        ERROR_ROUTINE( EXIT_FAILURE, "Error: Zu wenig Argumente\n")
+        ERROR_ROUTINE( EXIT_FAILURE)
     }
     char *endptr = NULL;
     int numProc = (int) strtol(argv[1], &endptr, 10);
     if (errno != 0 || !numProc || *endptr) {
-        ERROR_ROUTINE(EXIT_FAILURE, "\n Error: Nicht gültige Processzahl\n\n")
+        ERROR_ROUTINE(EXIT_FAILURE)
     }
     if (numProc > OSMP_MAX_PROCESSES) {
-        ERROR_ROUTINE(EXIT_FAILURE, "\n Error: Maximale Processzahl überschritten \n\n")
+        ERROR_ROUTINE(EXIT_FAILURE)
     }
     if (numProc < 1) {
-        ERROR_ROUTINE(EXIT_FAILURE, "\n Error: Processzahl ist kleiner 1\n\n")
+        ERROR_ROUTINE(EXIT_FAILURE)
     }
 
     /**
@@ -38,19 +40,19 @@ int main(int argc, char *argv[]){
      */
     int fd;
     if ((fd = shm_open(OSMP_SHM_NAME, O_CREAT | O_RDWR, 0777)) == -1) {
-        ERROR_ROUTINE(SHMOPENERR, "%s\n", strerror(errno))
+        ERROR_ROUTINE2(SHMOPENERR, "%s\n", strerror(errno))
     }
 
     off_t memSize = (off_t) (sizeof(struct shared_memory));
 
     if (ftruncate(fd, memSize) == -1) {
-        ERROR_ROUTINE(FTRUNCERR, "%s\n", strerror(errno))
+        ERROR_ROUTINE2(FTRUNCERR, "%s\n", strerror(errno))
     }
 
     void *addr = NULL;
     // Map the shared memory object.
     if ((addr = mmap(NULL, (size_t) memSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED) {
-        ERROR_ROUTINE(MMAPERR, "%s\n", strerror(errno))
+        ERROR_ROUTINE2(MMAPERR, "%s\n", strerror(errno))
     }
 
     struct shared_memory *mem = (struct shared_memory *) addr;
@@ -63,12 +65,12 @@ int main(int argc, char *argv[]){
     for (int i = 0; i < numProc; i++) {
         pid_t child_pid = fork();
         if (child_pid < (pid_t) 0) {
-            ERROR_ROUTINE(FORKERR, "%s\n", strerror(errno))
+            ERROR_ROUTINE2(FORKERR, "%s\n", strerror(errno))
         }
         if (child_pid == (pid_t) 0) {
             initChild(mem, i);
             execv(argv[2], params);
-            ERROR_ROUTINE(EXECERR, "%s\n", strerror(errno))
+            ERROR_ROUTINE2(EXECERR, "%s\n", strerror(errno))
         }
         sleep(1);
     }
@@ -80,7 +82,7 @@ int main(int argc, char *argv[]){
         w = waitpid(-1, &status, WUNTRACED | WCONTINUED);
 
         if (w == -1) {
-            ERROR_ROUTINE(WAITERR, "%s\n", strerror(errno))
+            ERROR_ROUTINE2(WAITERR, "%s\n", strerror(errno))
         }
 
         if (WIFEXITED(status)) {//WIFEXITED: returns true if the child terminated normally, that is, by calling exit(3) or _exit(2), or by returning from main().
@@ -95,11 +97,11 @@ int main(int argc, char *argv[]){
     }
 
     if (munmap(addr, (size_t) memSize) == -1) {
-        ERROR_ROUTINE(MUNMAPERR, "%s\n", strerror(errno))
+        ERROR_ROUTINE(MUNMAPERR)
     }
 
     if (shm_unlink(OSMP_SHM_NAME) == -1) {
-        ERROR_ROUTINE(UNLINKERR, "%s\n", strerror(errno))
+        ERROR_ROUTINE(UNLINKERR)
     }
 
 
