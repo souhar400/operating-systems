@@ -10,5 +10,6 @@
 #define MAXARGS 100
 
 void initChild(struct shared_memory *mem, int rank);
+void initMemory(struct shared_memory *mem);
 
 #endif //OSMP_OSMPRUN_H

@@ -40,37 +40,37 @@ int main(int argc, char *argv[]){
      */
     int fd;
     if ((fd = shm_open(OSMP_SHM_NAME, O_CREAT | O_RDWR, 0777)) == -1) {
-        ERROR_ROUTINE2(SHMOPENERR, "%s\n", strerror(errno))
+        ERROR_ROUTINE(SHMOPENERR)
     }
 
     off_t memSize = (off_t) (sizeof(struct shared_memory));
 
     if (ftruncate(fd, memSize) == -1) {
-        ERROR_ROUTINE2(FTRUNCERR, "%s\n", strerror(errno))
+        ERROR_ROUTINE(FTRUNCERR)
     }
 
     void *addr = NULL;
     // Map the shared memory object.
     if ((addr = mmap(NULL, (size_t) memSize, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0)) == MAP_FAILED) {
-        ERROR_ROUTINE2(MMAPERR, "%s\n", strerror(errno))
+        ERROR_ROUTINE(MMAPERR)
     }
 
     struct shared_memory *mem = (struct shared_memory *) addr;
     mem->shm_size = memSize;
     mem->size=numProc;
-
-    char *params[] = {OSMP_SHM_NAME, NULL};
+    initMemory(mem);
+    char *params[] = {OSMP_SHM_NAME,  NULL};
 
 
     for (int i = 0; i < numProc; i++) {
         pid_t child_pid = fork();
         if (child_pid < (pid_t) 0) {
-            ERROR_ROUTINE2(FORKERR, "%s\n", strerror(errno))
+            ERROR_ROUTINE(FORKERR)
         }
         if (child_pid == (pid_t) 0) {
             initChild(mem, i);
             execv(argv[2], params);
-            ERROR_ROUTINE2(EXECERR, "%s\n", strerror(errno))
+            ERROR_ROUTINE(EXECERR)
         }
         sleep(1);
     }
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]){
         w = waitpid(-1, &status, WUNTRACED | WCONTINUED);
 
         if (w == -1) {
-            ERROR_ROUTINE2(WAITERR, "%s\n", strerror(errno))
+            ERROR_ROUTINE(WAITERR)
         }
 
         if (WIFEXITED(status)) {//WIFEXITED: returns true if the child terminated normally, that is, by calling exit(3) or _exit(2), or by returning from main().
@@ -109,7 +109,20 @@ int main(int argc, char *argv[]){
 
 void initChild(struct shared_memory *mem, int rank)
 {
-    mem->processes[rank].rank = rank;
-    mem->processes[rank].pid = getpid();
-    mem->processes[rank].messages_zahl = OSMP_MAX_MESSAGES_PROC;
+    struct process *proc = &mem->processes[rank];
+    proc->rank = rank;
+    proc->pid = getpid();
+    sem_init(&proc->proc_mutex, 0, 1);
+    sem_init(&proc->belegte_slots, 0, 0);
+    sem_init(&proc->freie_slots, 0, OSMP_MAX_MESSAGES_PROC);
+
+    //mem->processes[rank].messages_zahl = OSMP_MAX_MESSAGES_PROC;
+}
+
+void initMemory(struct shared_memory *mem){
+    sem_init(&mem->free_slots, 0, OSMP_MAX_SLOTS);
+    sem_init(&mem->shm_mutex, 0 , 1);
+    for(int i = 0; i < OSMP_MAX_SLOTS; i++){
+        mem->free_msg_index_stack[i] = i;
+    }
 }

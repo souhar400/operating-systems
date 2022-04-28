@@ -34,8 +34,6 @@
 #define OSMP_SHM_NAME "OSMP_sh_mem"
 #define ERROR_ROUTINE(code) fprintf(stderr, "%s\n", strerror(errno)); \
                                     exit(code);
-#define ERROR_ROUTINE2(code, format, str) fprintf(stderr, format, str); \
-                                    exit(code);
 
 //Aufzählung für den Datentyp
 typedef enum {
@@ -53,26 +51,27 @@ typedef enum {
 
 struct parameters {
     int size;
-    int *shm_pointer; //int ? struct shared_memory* no?
+    struct shared_memory *shm_pointer; //int ? struct shared_memory* no?
     int rank;
 };
 
 struct message {
     int sender_pr_rank;
-    int receiver_pr_rank; //braucht man das?
     int elt_zahl;
     int msg_len;
     OSMP_Datatype elt_datentyp;
+    int next_free_msg_slot;
     void *payload[OSMP_MAX_PAYLOAD_LENGTH];
 };
 
 struct process {
     int rank;
+    pid_t pid;
     int read_index;
-    int write_index;
+    //int write_index;
     sem_t proc_mutex;
-    sem_t max_msg;
-    sem_t no_msg;
+    sem_t belegte_slots;
+    sem_t freie_slots;
     int msg_slot[OSMP_MAX_MESSAGES_PROC];
 };
 
@@ -80,7 +79,8 @@ struct shared_memory {
     sem_t shm_mutex;
     sem_t free_slots;
     off_t shm_size;
-    int available_message_slot;
+    int stack_index;
+    int free_msg_index_stack[OSMP_MAX_SLOTS];
     int size;
     struct message messages[OSMP_MAX_SLOTS];
     struct process processes[OSMP_MAX_PROCESSES];
