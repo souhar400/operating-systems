@@ -40,6 +40,7 @@ int OSMP_Init(const int *argc, char ***argv) {
     }
 
     mem = (struct shared_memory *) addr;
+
     param->size = (int) mem->size;
     param->shm_pointer = addr;
     pid_t pid = getpid();
@@ -58,10 +59,11 @@ int OSMP_Size(int *size) {
     if (param->size <= 0) {
         return OSMP_ERROR;
     }
+
     *size = param->size;
     return OSMP_SUCCESS;
-
 }
+
 
 int OSMP_Rank(int *rank) {
     if (param->rank < 0) {
@@ -72,14 +74,42 @@ int OSMP_Rank(int *rank) {
 
 }
 
-
 int OSMP_Send(const void *buf, int count, OSMP_Datatype datatype, int dest) {
-    printf("osmp_send");
+
+    int my_msg_index = param->shm_pointer->actual_free_slot;
+    struct message *my_msg_slot = &param->shm_pointer->messages[my_msg_index];
+    param->shm_pointer->actual_free_slot = my_msg_slot->next_free_msg_slot;
+    printf("\n Slot wo die Nachricht geschrieben wird ist %d\n ", my_msg_index);
+    my_msg_slot->sender_pr_rank =  param->rank;
+    my_msg_slot->elt_zahl =count;
+    my_msg_slot->msg_len = count* sizeof(datatype);
+    my_msg_slot->elt_datentyp= datatype;
+    memcpy(my_msg_slot->payload, buf, my_msg_slot->msg_len);
+
+    param->shm_pointer->processes[dest].msg_slot[param->shm_pointer->processes[dest].write_index] = my_msg_index;
+    param->shm_pointer->processes[dest].write_index++;
+
     return 0;
 }
 
 int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *len) {
-    printf("osmp_recv");
+
+    int msg_slot = param->shm_pointer->processes[param->rank].msg_slot[param->shm_pointer->processes[param->rank].read_index];
+    param->shm_pointer->processes[param->rank].read_index++;
+
+    printf("\n der Slot wo die zu empfangennen Nachricht liegt ist : %d\n ", msg_slot);
+
+
+    struct message *my_msg_slot = &param->shm_pointer->messages[msg_slot];
+
+    param->shm_pointer->messages[msg_slot].next_free_msg_slot = param->shm_pointer->actual_free_slot;
+    param->shm_pointer->actual_free_slot= msg_slot;
+
+    *source = my_msg_slot->sender_pr_rank;
+    *len = my_msg_slot->msg_len;
+
+    memcpy(buf, my_msg_slot->payload, *len);
+
     return 0;
 }
 

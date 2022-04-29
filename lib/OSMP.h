@@ -68,7 +68,7 @@ struct process {
     int rank;
     pid_t pid;
     int read_index;
-    //int write_index;
+    int write_index;
     sem_t proc_mutex;
     sem_t belegte_slots;
     sem_t freie_slots;
@@ -80,7 +80,7 @@ struct shared_memory {
     sem_t free_slots;
     off_t shm_size;
     int stack_index;
-    int free_msg_index_stack[OSMP_MAX_SLOTS];
+    int actual_free_slot;
     int size;
     struct message messages[OSMP_MAX_SLOTS];
     struct process processes[OSMP_MAX_PROCESSES];
