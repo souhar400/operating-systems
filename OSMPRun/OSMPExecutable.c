@@ -12,6 +12,26 @@ int main(int argc, char *argv[]) {
     //printf("RANK %d \n", rank);
     //printf("Size %d \n\n", size);
 
+    // 0 --> 1
+    // read 1 msg from 1
+    if(rank == 0) {
+        printf("der Prozess %d läuft nun...\n ", rank);
+
+        int source, len;
+        char *bufout = calloc(512, 1);
+        OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
+        printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
+
+        char* bufin = "hey diese Nachricht ist von 0 an 1";
+        OSMP_Send(bufin,strlen(bufin), osmp_unsigned_char, 1);
+        printf("Senden beendet von 0 an 1\n");
+
+    }
+
+
+
+
+
     // 2--> 1
     //read one msg from 1, 5
     if(rank == 2) {
@@ -94,6 +114,7 @@ int main(int argc, char *argv[]) {
 
 //1 read all messages
 //1 -> 2
+//1 -> 0
     if(rank == 1) {
         sleep(3);
         printf(" der Prozess %d läuft nun\n", rank);
@@ -109,6 +130,9 @@ int main(int argc, char *argv[]) {
         printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
 
         OSMP_Send(bufin,strlen(bufin), osmp_unsigned_char, 2);
+
+        bufin = "hey diese Nachricht ist von  1 an 0";
+        OSMP_Send(bufin,strlen(bufin), osmp_unsigned_char, 0);
 
         OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
         printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
