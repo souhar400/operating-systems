@@ -75,54 +75,71 @@ int OSMP_Rank(int *rank) {
 }
 
 int OSMP_Send(const void *buf, int count, OSMP_Datatype datatype, int dest) {
-
-    //general_actual_free_slot HOLEN und UPDATEN
-    // --> Lesen und Schreiben in "shm" und  "shm->messages[]" <--
-    int my_msg_index = param->shm_pointer->actual_free_slot;
-    struct message *my_msg_instance = &param->shm_pointer->messages[my_msg_index];
-    param->shm_pointer->actual_free_slot = my_msg_instance->next_free_msg_slot;
-
-    //my_msg_instance VORBEREITEN
-    // --> Lesen  von "shm->messages[]" <--
-    printf("\n Slot wo die Nachricht geschrieben wird ist %d\n ", my_msg_index);
-    my_msg_instance->sender_pr_rank =  param->rank;
-    my_msg_instance->elt_zahl =count;
-    my_msg_instance->msg_len = (int) (count * sizeof(datatype));
-    my_msg_instance->elt_datentyp= datatype;
-    memcpy(my_msg_instance->payload, buf, (unsigned long) my_msg_instance->msg_len);
-
-    //daten in process[dest] UPDATEN: in msg_slots[write] my_msg_index SCHREIBEN und write_index UPDATEN
-    // --> Lesen und Schreiben in "shm->processes[]" <--
     struct process *dest_process = &param->shm_pointer->processes[dest];
-    dest_process->write_index = dest_process->write_index % OSMP_MAX_MESSAGES_PROC;
-    dest_process->msg_slots[dest_process->write_index] = my_msg_index;
-    dest_process->write_index++;
+
+    //general_actual_free_slot in shm->messages[] HOLEN und UPDATEN
+    // --> LESEN und SCHREIBEN in "shm" und  "shm->messages[]" <--
+    OSMP_wait(&param->shm_pointer->free_slots);
+    OSMP_wait(&param->shm_pointer->shm_mutex);
+        int my_msg_index = param->shm_pointer->actual_free_slot;
+        struct message *my_msg_instance = &param->shm_pointer->messages[my_msg_index];
+        param->shm_pointer->actual_free_slot = my_msg_instance->next_free_msg_slot;
+        //my_msg_instance VORBEREITEN
+        // --> Schreiben  in "shm->messages[FEST]" <--
+        my_msg_instance->sender_pr_rank =  param->rank;
+        my_msg_instance->elt_zahl =count;
+        my_msg_instance->msg_len = (int) (count * sizeof(datatype));
+        my_msg_instance->elt_datentyp= datatype;
+        memcpy(my_msg_instance->payload, buf, (unsigned long) my_msg_instance->msg_len);
+    OSMP_signal(&param->shm_pointer->shm_mutex);
+    OSMP_signal(&param->shm_pointer->belegte_slots);
+
+
+    OSMP_wait(&dest_process->freie_slots);
+    OSMP_wait(&dest_process->proc_mutex);
+        //daten in process[dest] UPDATEN: in process[]->msg_slots[write_index] my_msg_index SCHREIBEN und write_index UPDATEN
+        // --> LESEN und SCHREIBEN in "shm->processes[]" <--
+        dest_process->write_index = dest_process->write_index % OSMP_MAX_MESSAGES_PROC;
+        //sicherstellen dass es Platz gibt : ohne -1 Methode, durch Semaphore ?
+        dest_process->msg_slots[dest_process->write_index] = my_msg_index;
+        dest_process->write_index++;
+    OSMP_signal(&dest_process->proc_mutex);
+    OSMP_signal(&dest_process->belegte_slots);
 
     return 0;
 }
 
 int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *len) {
-
-    //msg_slot HOLEN [»] read_index && msg_slots[read_index] UPDATEN : from shm_process[][]
-    //--> Lesen und Schreiben in "shm->processes[]" <--
     struct process *reciever_process = &param ->shm_pointer->processes[param->rank];
-    reciever_process->read_index = reciever_process->read_index % OSMP_MAX_MESSAGES_PROC;
-    int msg_slot = reciever_process->msg_slots[reciever_process->read_index];
-    reciever_process->msg_slots[reciever_process->read_index] =-1;
-    reciever_process->read_index++;
+    int sem_value;
+    sem_getvalue(&reciever_process->belegte_slots, &sem_value);
 
-    printf("\n der Slot, wo die Nachricht zu empfangen liegt ist : %d\n ", msg_slot);
 
-    //nächste frei stellen UPDATEN
-    // --> Lesen und Schreiben in "shm" und  "shm->messages[]" <--
-    struct message *my_msg_instance = &param->shm_pointer->messages[msg_slot];
-    param->shm_pointer->messages[msg_slot].next_free_msg_slot = param->shm_pointer->actual_free_slot;
-    param->shm_pointer->actual_free_slot= msg_slot;
-    //my_msg_instance UPDATEN
-    *source = my_msg_instance->sender_pr_rank;
-    *len = my_msg_instance->msg_len;
-    //Nachricht HOLEN
-    memcpy(buf, my_msg_instance->payload, *len);
+    OSMP_wait(&reciever_process->belegte_slots);
+        //OSMP_wait(&reciever_process->proc_mutex);
+        //msg_slot HOLEN [»] read_index && msg_slots[read_index] UPDATEN : from shm_process[][]
+        //--> LESEN und SCHREIBEN in "shm->processes[]" <--
+        reciever_process->read_index = reciever_process->read_index % OSMP_MAX_MESSAGES_PROC;
+        int msg_slot = reciever_process->msg_slots[reciever_process->read_index];
+        //reciever_process->msg_slots[reciever_process->read_index] =-1;
+        reciever_process->read_index++;
+
+        //nächste frei stellen UPDATEN
+        // --> LESEN und SCHREIBEN in "shm" und  "shm->messages[]" <--
+        struct message *my_msg_instance = &param->shm_pointer->messages[msg_slot];
+        param->shm_pointer->messages[msg_slot].next_free_msg_slot = param->shm_pointer->actual_free_slot;
+        OSMP_wait(&param->shm_pointer->shm_mutex);
+        param->shm_pointer->actual_free_slot= msg_slot;
+        OSMP_signal(&param->shm_pointer->shm_mutex);
+
+        //my_msg_instance UPDATEN : [FEST]
+        *source = my_msg_instance->sender_pr_rank;
+        *len = my_msg_instance->msg_len;
+        //Nachricht HOLEN
+        memcpy(buf, my_msg_instance->payload, *len);
+    OSMP_signal(&param->shm_pointer->free_slots);
+    //OSMP_signal(&reciever_process->proc_mutex);
+    OSMP_signal(&reciever_process->freie_slots);
 
     return 0;
 }

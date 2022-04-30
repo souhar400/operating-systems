@@ -78,6 +78,7 @@ struct process {
 struct shared_memory {
     sem_t shm_mutex;
     sem_t free_slots;
+    sem_t belegte_slots;
     off_t shm_size;
     int stack_index;
     int actual_free_slot;

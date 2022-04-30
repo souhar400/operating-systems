@@ -113,23 +113,23 @@ void initChild(struct shared_memory *mem, int rank)
     struct process *proc = &mem->processes[rank];
     proc->rank = rank; //<=>     (*mem).processes[rank].rank=rank;    (*mem).processes[rank].rank=rank;
     proc->pid = getpid(); // <=>     mem->processes[rank].pid=getpid();
-    sem_init(&proc->proc_mutex, 0, 1);
-    sem_init(&proc->belegte_slots, 0, 0);
-    sem_init(&proc->freie_slots, 0, OSMP_MAX_MESSAGES_PROC);
-
-    //mem->processes[rank].messages_zahl = OSMP_MAX_MESSAGES_PROC;
+    sem_init(&proc->proc_mutex, 1, 1);
+    sem_init(&proc->belegte_slots, 1, 0);
+    sem_init(&proc->freie_slots, 1, OSMP_MAX_MESSAGES_PROC);
 }
 
 void initMemory(struct shared_memory *mem){
-    sem_init(&mem->free_slots, 0, OSMP_MAX_SLOTS);
-    sem_init(&mem->shm_mutex, 0 , 1);
+    sem_init(&mem->belegte_slots, 1, 0);
+    sem_init(&mem->free_slots, 1, OSMP_MAX_SLOTS);
+    sem_init(&mem->shm_mutex, 1 , 1);
     for(int i = 0; i < OSMP_MAX_SLOTS; i++){
         mem->messages[i].next_free_msg_slot = i+1;
     }
 
-    for (int i=0; i < OSMP_MAX_MESSAGES_PROC; i++){
+    for (int i=0; i < mem->size; i++){
         mem->processes[i].read_index= 0;
-        mem->processes[i].read_index= 0;
+        mem->processes[i].write_index= 0;
+
     }
     mem->actual_free_slot=0;
 }
