@@ -72,7 +72,7 @@ struct process {
     sem_t proc_mutex;
     sem_t belegte_slots;
     sem_t freie_slots;
-    int msg_slot[OSMP_MAX_MESSAGES_PROC];
+    int msg_slots[OSMP_MAX_MESSAGES_PROC];
 };
 
 struct shared_memory {

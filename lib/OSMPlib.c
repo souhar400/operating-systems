@@ -75,41 +75,48 @@ int OSMP_Rank(int *rank) {
 }
 
 int OSMP_Send(const void *buf, int count, OSMP_Datatype datatype, int dest) {
+    struct process *dest_process = &param->shm_pointer->processes[dest];
+    dest_process->write_index = dest_process->write_index % OSMP_MAX_MESSAGES_PROC;
 
+    //general_actual_free_slot HOLEN und UPDATEN
     int my_msg_index = param->shm_pointer->actual_free_slot;
-    struct message *my_msg_slot = &param->shm_pointer->messages[my_msg_index];
-    param->shm_pointer->actual_free_slot = my_msg_slot->next_free_msg_slot;
+    struct message *my_msg_instance = &param->shm_pointer->messages[my_msg_index];
+    param->shm_pointer->actual_free_slot = my_msg_instance->next_free_msg_slot;
+    //my_msg_instance VORBEREITEN
     printf("\n Slot wo die Nachricht geschrieben wird ist %d\n ", my_msg_index);
-    my_msg_slot->sender_pr_rank =  param->rank;
-    my_msg_slot->elt_zahl =count;
-    my_msg_slot->msg_len = count* sizeof(datatype);
-    my_msg_slot->elt_datentyp= datatype;
-    memcpy(my_msg_slot->payload, buf, my_msg_slot->msg_len);
-
-    param->shm_pointer->processes[dest].msg_slot[param->shm_pointer->processes[dest].write_index] = my_msg_index;
-    param->shm_pointer->processes[dest].write_index++;
+    my_msg_instance->sender_pr_rank =  param->rank;
+    my_msg_instance->elt_zahl =count;
+    my_msg_instance->msg_len = (int) (count * sizeof(datatype));
+    my_msg_instance->elt_datentyp= datatype;
+    memcpy(my_msg_instance->payload, buf, (unsigned long) my_msg_instance->msg_len);
+    //daten in process[dest] UPDATEN: in msg_slots[write] my_msg_index SCHREIBEN und write_index UPDATEN
+    dest_process->msg_slots[dest_process->write_index] = my_msg_index;
+    dest_process->write_index++;
 
     return 0;
 }
 
 int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *len) {
 
-    int msg_slot = param->shm_pointer->processes[param->rank].msg_slot[param->shm_pointer->processes[param->rank].read_index];
-    param->shm_pointer->processes[param->rank].read_index++;
+    struct process *reciever_process = &param ->shm_pointer->processes[param->rank];
+    //msg_slot HOLEN [»] read_index && msg_slots[read_index] UPDATEN
+    reciever_process->read_index = reciever_process->read_index % OSMP_MAX_MESSAGES_PROC;
+    int msg_slot = reciever_process->msg_slots[reciever_process->read_index];
+    reciever_process->msg_slots[reciever_process->read_index] =-1;
+    reciever_process->read_index++;
 
-    printf("\n der Slot wo die zu empfangennen Nachricht liegt ist : %d\n ", msg_slot);
+    printf("\n der Slot, wo die Nachricht zu empfangen liegt ist : %d\n ", msg_slot);
 
 
-    struct message *my_msg_slot = &param->shm_pointer->messages[msg_slot];
-
+    struct message *my_msg_instance = &param->shm_pointer->messages[msg_slot];
+    //nächste frei stellen UPDATEN
     param->shm_pointer->messages[msg_slot].next_free_msg_slot = param->shm_pointer->actual_free_slot;
     param->shm_pointer->actual_free_slot= msg_slot;
-
-    *source = my_msg_slot->sender_pr_rank;
-    *len = my_msg_slot->msg_len;
-
-    memcpy(buf, my_msg_slot->payload, *len);
-
+    //my_msg_instance UPDATEN
+    *source = my_msg_instance->sender_pr_rank;
+    *len = my_msg_instance->msg_len;
+    //Nachricht HOLEN
+    memcpy(buf, my_msg_instance->payload, *len);
     return 0;
 }
 
