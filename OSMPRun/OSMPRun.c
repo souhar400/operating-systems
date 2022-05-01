@@ -59,10 +59,12 @@ int main(int argc, char *argv[]){
     mem->shm_size = memSize;
     mem->size=numProc;
     initMemory(mem);
-    char *params[] = {OSMP_SHM_NAME,  NULL};
-
+    char *params[] = {OSMP_SHM_NAME,"",NULL};
 
     for (int i = 0; i < numProc; i++) {
+        char p[get_digit_size(i)+1];
+        sprintf(p, "%d", i);
+        params[1] = p;
         pid_t child_pid = fork();
         if (child_pid < (pid_t) 0) {
             ERROR_ROUTINE(FORKERR)
@@ -107,6 +109,7 @@ int main(int argc, char *argv[]){
 
 }
 
+
 void initChild(struct shared_memory *mem, int rank)
 {
 
@@ -134,4 +137,12 @@ void initMemory(struct shared_memory *mem){
 
     }
     mem->actual_free_slot=0;
+}
+int get_digit_size(int size){
+    int count = 0;
+    do{
+        size /=10;
+        count++;
+    }while(size > 0);
+    return count;
 }

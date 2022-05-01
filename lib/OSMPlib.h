@@ -17,7 +17,7 @@
  * @param argv Address of the argument vector.
  * @return OSMP_SUCCESS on success otherwise OSMP_ERROR.
  */
-int OSMP_Init(const int *argc, char ***argv);
+int OSMP_Init(const int *argc, char **argv);
 
 /**
  * This routine returns the number of OSMP processes without the OSMP starter process.

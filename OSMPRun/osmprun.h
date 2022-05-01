@@ -11,5 +11,5 @@
 
 void initChild(struct shared_memory *mem, int rank);
 void initMemory(struct shared_memory *mem);
-
+int get_digit_size(int size);
 #endif //OSMP_OSMPRUN_H

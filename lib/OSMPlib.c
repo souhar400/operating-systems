@@ -8,7 +8,7 @@
 struct parameters *param;
 
 
-int OSMP_Init(const int *argc, char ***argv) {
+int OSMP_Init(const int *argc, char **argv) {
     param = malloc(sizeof(struct parameters));
     struct shared_memory *mem;
     struct stat buff;
@@ -43,14 +43,7 @@ int OSMP_Init(const int *argc, char ***argv) {
 
     param->size = (int) mem->size;
     param->shm_pointer = addr;
-    pid_t pid = getpid();
-
-    for (int i = 0; i < param->size; i++) {
-        if (mem->processes[i].pid == pid) {
-            param->rank = i;
-            break;
-        }
-    }
+    param->rank = (int) strtol(argv[1], NULL, 10);
 
     return OSMP_SUCCESS;
 }
@@ -169,7 +162,7 @@ void OSMP_signal(sem_t *sem){
 int OSMP_Barrier(){
     struct shared_memory *shm = param->shm_pointer;
     if(shm->barrier.count != shm->size) shm->barrier.count++;
-    printf("%d %d\n", shm->size, shm->barrier.count);
+
     if(shm->barrier.count == shm->size){
         OSMP_signal(&shm->barrier.sem_barrier);
     }
@@ -177,6 +170,7 @@ int OSMP_Barrier(){
         OSMP_wait(&shm->barrier.sem_barrier);
         OSMP_signal(&shm->barrier.sem_barrier);
     }
+
     return OSMP_SUCCESS;
 }
 
@@ -198,5 +192,6 @@ int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root){
         realloc(buf, (unsigned long) msg->msg_len);
         memcpy(buf, msg->payload, (unsigned long) msg->msg_len);
     }
+
     return OSMP_SUCCESS;
 }

@@ -6,7 +6,7 @@
 
 int main(int argc, char *argv[]) {
     int rank = 0, size = 0;
-    OSMP_Init(&argc, &argv);
+    OSMP_Init(&argc, argv);
     OSMP_Rank(&rank);
     OSMP_Size(&size);
     //printf("RANK %d \n", rank);
