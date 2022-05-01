@@ -12,12 +12,12 @@
 
 #include "lib/OSMP.h"
 #include "osmprun.h"
-#include "lib/OSMPlib.h"
+
 
 
 int main(int argc, char *argv[]){
     errno=0;
-    printf (" Die Anzahl der Argumente ist %d\n", argc);
+    printf ("Die Anzahl der Argumente ist %d\n", argc);
 
     if (argc < 2) {
         ERROR_ROUTINE( EXIT_FAILURE)
@@ -122,8 +122,10 @@ void initMemory(struct shared_memory *mem){
     sem_init(&mem->belegte_slots, 1, 0);
     sem_init(&mem->free_slots, 1, OSMP_MAX_SLOTS);
     sem_init(&mem->shm_mutex, 1 , 1);
-    for(int i = 0; i < OSMP_MAX_SLOTS; i++){
-        mem->messages[i].next_free_msg_slot = i+1;
+    sem_init(&mem->barrier.sem_barrier, 1, 0);
+    mem->barrier.count = 0;
+    for(int i = 0; i < OSMP_MAX_SLOTS-1; i++){
+        mem->messages[i].next_free_msg_slot = i+1 % OSMP_MAX_SLOTS - 1;
     }
 
     for (int i=0; i < mem->size; i++){

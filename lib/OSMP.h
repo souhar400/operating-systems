@@ -15,11 +15,13 @@
 #include <sys/wait.h>
 #include <fcntl.h>
 #include <semaphore.h>
+#include <pthread.h>
 
 #define OSMP_MAX_MESSAGES_PROC   16 // maximale Zahl der Nachrichten pro Prozess
 #define OSMP_MAX_SLOTS           256 // maximale Anzahl der Nachrichten, die insgesamt vorhanden sein dürfen
 #define OSMP_MAX_PAYLOAD_LENGTH  1024 // maximale Länge der Nutzlast einer Nachricht
 #define OSMP_MAX_PROCESSES  100 // maximale Zahl der Prozesses
+#define OSMP_BCAST_SLOT 255 // Slot an dem Broadcast Nachrichten liegen
 
 #define FORKERR 10
 #define EXECERR 11
@@ -30,17 +32,18 @@
 #define UNLINKERR 16
 #define MUNMAPERR 17
 #define SEMERR 18
+#define PTHREAD_BARRIER_ERROR 19
 
 #define OSMP_SHM_NAME "OSMP_sh_mem"
 #define ERROR_ROUTINE(code) fprintf(stderr, "%s\n", strerror(errno)); \
                                     exit(code);
-
+typedef void* OSMP_Request;
 //Aufzählung für den Datentyp
 typedef enum {
     osmp_short,
     osmp_int,
     osmp_long,
-    osmp_unsigned_char,
+    osmp_unsigned_char = sizeof(unsigned char),
     osmp_unsigned_short,
     osmp_unsigned,
     osmp_unsigned_long,
@@ -48,6 +51,11 @@ typedef enum {
     osmp_double,
     osmp_byte,
 } OSMP_Datatype;
+
+struct barrier{
+    volatile int count;
+    sem_t sem_barrier;
+};
 
 struct parameters {
     int size;
@@ -61,7 +69,7 @@ struct message {
     int msg_len;
     OSMP_Datatype elt_datentyp;
     int next_free_msg_slot;
-    void *payload[OSMP_MAX_PAYLOAD_LENGTH];
+    char payload[OSMP_MAX_PAYLOAD_LENGTH];
 };
 
 struct process {
@@ -79,6 +87,7 @@ struct shared_memory {
     sem_t shm_mutex;
     sem_t free_slots;
     sem_t belegte_slots;
+    struct barrier barrier;
     off_t shm_size;
     int stack_index;
     int actual_free_slot;

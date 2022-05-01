@@ -164,4 +164,39 @@ void OSMP_signal(sem_t *sem){
     if(rv == -1){
         ERROR_ROUTINE(SEMERR)
     }
+
+}
+int OSMP_Barrier(){
+    struct shared_memory *shm = param->shm_pointer;
+    if(shm->barrier.count != shm->size) shm->barrier.count++;
+    printf("%d %d\n", shm->size, shm->barrier.count);
+    if(shm->barrier.count == shm->size){
+        OSMP_signal(&shm->barrier.sem_barrier);
+    }
+    else {
+        OSMP_wait(&shm->barrier.sem_barrier);
+        OSMP_signal(&shm->barrier.sem_barrier);
+    }
+    return OSMP_SUCCESS;
+}
+
+int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root){
+    if(param->rank == root){
+        OSMP_wait(&param->shm_pointer->shm_mutex);
+        struct message *msg = &param->shm_pointer->messages[OSMP_BCAST_SLOT];
+        msg->sender_pr_rank = root;
+        msg->elt_datentyp = datatype;
+        msg->elt_zahl = count;
+        msg->msg_len = (int) ((unsigned int) count * datatype);
+        memcpy(msg->payload, buf, (unsigned long) msg->msg_len);
+        OSMP_signal(&param->shm_pointer->shm_mutex);
+        OSMP_Barrier();
+    }
+    else{
+        OSMP_Barrier();
+        struct message *msg = &param->shm_pointer->messages[OSMP_BCAST_SLOT];
+        realloc(buf, (unsigned long) msg->msg_len);
+        memcpy(buf, msg->payload, (unsigned long) msg->msg_len);
+    }
+    return OSMP_SUCCESS;
 }

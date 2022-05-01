@@ -65,5 +65,15 @@ int OSMP_Finalize(void);
  * @param sem der Semaphore zur Inkrementierung/dekrementierung
  */
 void OSMP_wait(sem_t *sem);
+/**
+ * Kapselung der systemroutinen
+ * @param sem der Semaphore zur Inkrementierung/dekrementierung
+ */
 void OSMP_signal(sem_t *sem);
+
+int OSMP_Barrier();
+int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root);
+
+int OSMP_CreateRequest(OSMP_Request *request);
+int OSMP_RemoveRequest(OSMP_Request *request);
 #endif //OSMP_OSMPLIB_H
