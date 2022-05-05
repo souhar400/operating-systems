@@ -62,7 +62,7 @@ int main(int argc, char *argv[]){
     char *params[] = {OSMP_SHM_NAME,"",NULL};
 
     for (int i = 0; i < numProc; i++) {
-        char p[get_digit_size(i)+1];
+        char p[get_digit_count(i) + 1];
         sprintf(p, "%d", i);
         params[1] = p;
         pid_t child_pid = fork();
@@ -125,8 +125,30 @@ void initMemory(struct shared_memory *mem){
     sem_init(&mem->belegte_slots, 1, 0);
     sem_init(&mem->free_slots, 1, OSMP_MAX_SLOTS);
     sem_init(&mem->shm_mutex, 1 , 1);
-    sem_init(&mem->barrier.sem_barrier, 1, 0);
-    mem->barrier.count = 0;
+    //Broadcast mit semaphoren
+//    sem_init(&mem->barrier.sem_barrier, 1, 0);
+//    mem->barrier.count = 0;
+
+    //Broadcast mit pthread_barrier
+//    pthread_barrierattr_t attr;
+//    pthread_barrierattr_init(&attr);
+//    pthread_barrierattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
+//    pthread_barrier_init(&mem->barrier, &attr, (unsigned int) mem->size);
+
+    //Broadcast mit Condition Variables
+    pthread_mutexattr_t mutexattr;
+    pthread_condattr_t condattr;
+
+    pthread_mutexattr_init(&mutexattr);
+    pthread_mutexattr_setpshared(&mutexattr, PTHREAD_PROCESS_SHARED);
+    pthread_mutex_init(&mem->cond_barrier.bcast_mutex, &mutexattr);
+
+    pthread_condattr_init(&condattr);
+    pthread_condattr_setpshared(&condattr, PTHREAD_PROCESS_SHARED);
+    pthread_cond_init(&mem->cond_barrier.bcast_cond, &condattr);
+
+    mem->cond_barrier.cond = 0;
+
     for(int i = 0; i < OSMP_MAX_SLOTS-1; i++){
         mem->messages[i].next_free_msg_slot = i+1 % OSMP_MAX_SLOTS - 1;
     }
@@ -138,7 +160,7 @@ void initMemory(struct shared_memory *mem){
     }
     mem->actual_free_slot=0;
 }
-int get_digit_size(int size){
+int get_digit_count(int size){
     int count = 0;
     do{
         size /=10;

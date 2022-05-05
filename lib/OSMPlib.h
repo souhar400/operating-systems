@@ -70,8 +70,19 @@ void OSMP_wait(sem_t *sem);
  * @param sem der Semaphore zur Inkrementierung/dekrementierung
  */
 void OSMP_signal(sem_t *sem);
-
+/**
+ * Barrier Semaphore für Broadcast, alle warten bis alle Prozesse an der Barrier angekommen sind
+ * @return OSMP_SUCCESS otherwise program exits
+ */
 int OSMP_Barrier();
+/**
+ *
+ * @param buf buffer zum schreiben/lesen von Nachrichten
+ * @param count Anzahl der Elemente
+ * @param datatype Datentyp
+ * @param root absender, root muss überall übereinstimmen, nur da wo rank == root ist wird abgesendet
+ * @return OSMP_SUCCESS
+ */
 int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root);
 
 int OSMP_CreateRequest(OSMP_Request *request);

@@ -57,6 +57,11 @@ struct barrier{
     sem_t sem_barrier;
 };
 
+typedef struct{
+    pthread_mutex_t bcast_mutex;
+    pthread_cond_t bcast_cond;
+    volatile int cond;
+} barrier_t;
 struct parameters {
     int size;
     struct shared_memory *shm_pointer; //int ? struct shared_memory* no?
@@ -87,7 +92,10 @@ struct shared_memory {
     sem_t shm_mutex;
     sem_t free_slots;
     sem_t belegte_slots;
-    struct barrier barrier;
+
+    //struct barrier barrier; //-> Broadcast mit Semaphoren
+    //pthread_barrier_t barrier; // -> Broadcast mit pthread_barrier
+    barrier_t cond_barrier; //-> broadcast mit condition Variables
     off_t shm_size;
     int stack_index;
     int actual_free_slot;
