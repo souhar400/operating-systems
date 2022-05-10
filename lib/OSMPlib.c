@@ -104,9 +104,6 @@ int OSMP_Send(const void *buf, int count, OSMP_Datatype datatype, int dest) {
 
 int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *len) {
     struct process *reciever_process = &param ->shm_pointer->processes[param->rank];
-    int sem_value;
-    sem_getvalue(&reciever_process->belegte_slots, &sem_value);
-
 
     OSMP_wait(&reciever_process->belegte_slots);
         //OSMP_wait(&reciever_process->proc_mutex);
@@ -120,9 +117,9 @@ int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *le
         //nächste frei stellen UPDATEN
         // --> LESEN und SCHREIBEN in "shm" und  "shm->messages[]" <--
         struct message *my_msg_instance = &param->shm_pointer->messages[msg_slot];
-        param->shm_pointer->messages[msg_slot].next_free_msg_slot = param->shm_pointer->actual_free_slot;
         OSMP_wait(&param->shm_pointer->shm_mutex);
-        param->shm_pointer->actual_free_slot= msg_slot;
+            param->shm_pointer->messages[msg_slot].next_free_msg_slot = param->shm_pointer->actual_free_slot;
+            param->shm_pointer->actual_free_slot= msg_slot;
         OSMP_signal(&param->shm_pointer->shm_mutex);
 
         //my_msg_instance UPDATEN : [FEST]

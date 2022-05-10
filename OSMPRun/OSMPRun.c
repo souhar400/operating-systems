@@ -123,17 +123,17 @@ void initChild(struct shared_memory *mem, int rank)
 
 void initMemory(struct shared_memory *mem){
     sem_init(&mem->belegte_slots, 1, 0);
-    sem_init(&mem->free_slots, 1, OSMP_MAX_SLOTS);
+    sem_init(&mem->free_slots, 1, OSMP_MAX_SLOTS-1);
     sem_init(&mem->shm_mutex, 1 , 1);
     //Broadcast mit semaphoren
-//    sem_init(&mem->barrier.sem_barrier, 1, 0);
-//    mem->barrier.count = 0;
+    //sem_init(&mem->barrier.sem_barrier, 1, 0);
+    //mem->barrier.count = 0;
 
     //Broadcast mit pthread_barrier
-//    pthread_barrierattr_t attr;
-//    pthread_barrierattr_init(&attr);
-//    pthread_barrierattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
-//    pthread_barrier_init(&mem->barrier, &attr, (unsigned int) mem->size);
+    //pthread_barrierattr_t attr;
+    //pthread_barrierattr_init(&attr);
+    //pthread_barrierattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
+    //pthread_barrier_init(&mem->barrier, &attr, (unsigned int) mem->size);
 
     //Broadcast mit Condition Variables
     pthread_mutexattr_t mutexattr;
@@ -150,7 +150,7 @@ void initMemory(struct shared_memory *mem){
     mem->cond_barrier.cond = 0;
 
     for(int i = 0; i < OSMP_MAX_SLOTS-1; i++){
-        mem->messages[i].next_free_msg_slot = i+1 % OSMP_MAX_SLOTS - 1;
+        mem->messages[i].next_free_msg_slot = (i+1) % (OSMP_MAX_SLOTS-1) ;
     }
 
     for (int i=0; i < mem->size; i++){

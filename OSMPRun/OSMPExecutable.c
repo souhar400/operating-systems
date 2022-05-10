@@ -29,9 +29,6 @@ int main(int argc, char *argv[]) {
     }
 
 
-
-
-
     // 2--> 1
     //read one msg from 1, 5
     if(rank == 2) {
@@ -45,16 +42,14 @@ int main(int argc, char *argv[]) {
         printf("OSMP process %d received %d byte from %d [%s] \n ", rank, len, source, bufout);
 
 
-        OSMP_Send(bufin,strlen(bufin), osmp_unsigned_char, 1);
-        printf("Senden beendet von 2 an 1\n");
-
         OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
         printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
 
-
+        OSMP_Send(bufin,strlen(bufin), osmp_unsigned_char, 1);
+        printf("Senden beendet von 2 an 1\n");
     }
 
-    // 3 --> 1
+    // 3 --> 1 : HALLO
     if(rank == 3) {
         printf("der Prozess %d läuft nun ...\n ", rank);
         char* bufin = "von 3 an 1: H";
@@ -112,28 +107,27 @@ int main(int argc, char *argv[]) {
     }
 
 
-//1 read all messages
+//1 read all messages :5msg from 3, 1msg from 2, 1msg from 5, 1msg from 0, 1msg from 4
 //1 -> 2
 //1 -> 0
     if(rank == 1) {
         sleep(3);
         printf(" der Prozess %d läuft nun\n", rank);
 
-        char* bufin = "hey diese Nachricht ist von  1 an 2";
         char *bufout = calloc(512, 1);
-
-
         int source, len;
-        OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
-        printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
-        OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
-        printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
-
+        char* bufin = "hey diese Nachricht ist von  1 an 2";
         OSMP_Send(bufin,strlen(bufin), osmp_unsigned_char, 2);
 
         bufin = "hey diese Nachricht ist von  1 an 0";
         OSMP_Send(bufin,strlen(bufin), osmp_unsigned_char, 0);
 
+
+        OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
+        printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
+        OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
+        printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
+
         OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
         printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
         OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
@@ -146,6 +140,9 @@ int main(int argc, char *argv[]) {
 
         OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
         printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
+        OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
+        printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
+
         OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
         printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
     }

@@ -62,6 +62,8 @@ typedef struct{
     pthread_cond_t bcast_cond;
     volatile int cond;
 } barrier_t;
+
+
 struct parameters {
     int size;
     struct shared_memory *shm_pointer; //int ? struct shared_memory* no?
