@@ -147,7 +147,7 @@ void initMemory(struct shared_memory *mem){
     pthread_condattr_setpshared(&condattr, PTHREAD_PROCESS_SHARED);
     pthread_cond_init(&mem->cond_barrier.bcast_cond, &condattr);
 
-    mem->cond_barrier.cond = 0;
+    mem->cond_barrier.cond = mem->size;
 
     for(int i = 0; i < OSMP_MAX_SLOTS-1; i++){
         mem->messages[i].next_free_msg_slot = (i+1) % (OSMP_MAX_SLOTS-1) ;

@@ -193,14 +193,16 @@ int OSMP_Barrier(){
     //pthread_barrier_wait(&param->shm_pointer->barrier);
 
     //Broadcast mit Condition Variables
-    shm_handle->cond_barrier.cond++;
+
     pthread_mutex_lock(&shm_handle->cond_barrier.bcast_mutex);
-    if(shm_handle->cond_barrier.cond == shm_handle->size){
+    shm_handle->cond_barrier.cond--;
+    if(shm_handle->cond_barrier.cond == 0){
         pthread_cond_broadcast(&shm_handle->cond_barrier.bcast_cond);
     }
     else {
         pthread_cond_wait(&shm_handle->cond_barrier.bcast_cond, &shm_handle->cond_barrier.bcast_mutex);
     }
+    shm_handle->cond_barrier.cond = shm_handle->size;
     pthread_mutex_unlock(&shm_handle->cond_barrier.bcast_mutex);
     return OSMP_SUCCESS;
 }
@@ -233,6 +235,6 @@ int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root){
         realloc(buf, (unsigned long) msg->msg_len);
         memcpy(buf, msg->payload, (unsigned long) msg->msg_len);
     }
-
+    OSMP_Barrier(); // Synchronizieren auf Nachrichten gelesen, falls mehrere Aufrufe sicherstellen das letzter Bcasat aufruf durch ist
     return OSMP_SUCCESS;
 }
