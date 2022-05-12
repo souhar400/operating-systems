@@ -70,6 +70,19 @@ int OSMP_Rank(int *rank) {
 int OSMP_Send(const void *buf, int count, OSMP_Datatype datatype, int dest) {
     struct process *dest_process = &param->shm_pointer->processes[dest];
 
+    //prüfen ob destination ist gültig
+    if(dest >= param->size || dest<0 || dest == param->rank) {
+        fprintf(stderr, "Error: Destination not found or invalid\n");
+        return OSMP_ERROR;
+    }
+
+    //prüfen maximales Payload
+    if(datatype* (unsigned long) count)> OSMP_MAX_PAYLOAD_LENGTH ) {
+        fprintf(stderr, "Error: Maximum data length exceeded\n");
+        return OSMP_ERROR;
+    }
+
+
     //general_actual_free_slot in shm->messages[] HOLEN und UPDATEN
     // --> LESEN und SCHREIBEN in "shm" und  "shm->messages[]" <--
     OSMP_wait(&param->shm_pointer->free_slots);
@@ -122,11 +135,18 @@ int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *le
             param->shm_pointer->actual_free_slot= msg_slot;
         OSMP_signal(&param->shm_pointer->shm_mutex);
 
-        //my_msg_instance UPDATEN : [FEST]
-        *source = my_msg_instance->sender_pr_rank;
-        *len = my_msg_instance->msg_len;
-        //Nachricht HOLEN
-        memcpy(buf, my_msg_instance->payload, *len);
+        if(param->shm_pointer->messages[msg_slot].msg_len <= (datatype * (unsigned long) count)) {
+            //my_msg_instance UPDATEN : [FEST]
+            *source = my_msg_instance->sender_pr_rank;
+            *len = my_msg_instance->msg_len;
+            //Nachricht HOLEN
+            memcpy(buf, my_msg_instance->payload, *len);
+        }
+        else {
+            fprintf(stderr, "Error: Message bigger than allowed payload\n");
+            return OSMP_ERROR;
+        }
+
     OSMP_signal(&param->shm_pointer->free_slots);
     //OSMP_signal(&reciever_process->proc_mutex);
     OSMP_signal(&reciever_process->freie_slots);
