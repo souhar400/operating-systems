@@ -117,8 +117,8 @@ void initChild(struct shared_memory *mem, int rank)
     proc->rank = rank; //<=>     (*mem).processes[rank].rank=rank;    (*mem).processes[rank].rank=rank;
     proc->pid = getpid(); // <=>     mem->processes[rank].pid=getpid();
     sem_init(&proc->proc_mutex, 1, 1);
-    sem_init(&proc->belegte_slots, 1, 0);
-    sem_init(&proc->freie_slots, 1, OSMP_MAX_MESSAGES_PROC);
+    sem_init(&proc->proc_full, 1, 0);
+    sem_init(&proc->proc_free, 1, OSMP_MAX_MESSAGES_PROC);
 }
 
 void initMemory(struct shared_memory *mem){

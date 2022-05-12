@@ -85,15 +85,14 @@ struct process {
     int read_index;
     int write_index;
     sem_t proc_mutex;
-    sem_t belegte_slots;
-    sem_t freie_slots;
+    sem_t proc_full;
+    sem_t proc_free;
     int msg_slots[OSMP_MAX_MESSAGES_PROC];
 };
 
 struct shared_memory {
     sem_t shm_mutex;
     sem_t free_slots;
-    sem_t belegte_slots;
 
     //struct barrier barrier; //-> Broadcast mit Semaphoren
     //pthread_barrier_t barrier; // -> Broadcast mit pthread_barrier
