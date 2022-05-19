@@ -37,7 +37,9 @@
 #define OSMP_SHM_NAME "OSMP_sh_mem"
 #define ERROR_ROUTINE(code) fprintf(stderr, "%s\n", strerror(errno)); \
                                     exit(code);
-typedef void* OSMP_Request;
+//typedef void* OSMP_Request;
+
+
 //Aufzählung für den Datentyp
 typedef enum {
     osmp_short,
@@ -51,6 +53,23 @@ typedef enum {
     osmp_double,
     osmp_byte,
 } OSMP_Datatype;
+
+//eine Datenstruktur, die später verwendet werden kann, um abzufragen, ob die Operation abgeschlossen ist
+typedef struct {
+    int status;
+    pthread_t tid;
+    void *buf;
+    int count;
+    OSMP_Datatype datatype;
+    int dest;
+    int *source;
+    int *len;
+}request_data;
+
+typedef request_data* OSMP_Request;
+
+
+
 
 struct barrier{
     volatile int count;

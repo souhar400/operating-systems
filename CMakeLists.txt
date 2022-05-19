@@ -18,6 +18,7 @@ add_executable(Demo demo.c lib/OSMPlib.h)
 add_executable(OSMPRun OSMPRun/OSMPRun.c lib/OSMPlib.h lib/OSMPlib.c)
 add_executable(OSMPExecutable OSMPRun/OSMPExecutable.c lib/OSMPlib.h lib/OSMPlib.c)
 add_executable(OSMPBcast OSMPRun/OSMPBcast.c lib/OSMPlib.h lib/OSMPlib.c)
+add_executable(OSMPNonBlocking OSMPRun/OSMPNonBlocking.c lib/OSMPlib.h lib/OSMPlib.c )
 
 #target_link_libraries(OSMPRun -lrt)
 #target_link_libraries(OSMPExecutable -lrt)

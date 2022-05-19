@@ -85,9 +85,9 @@ int OSMP_Send(const void *buf, int count, OSMP_Datatype datatype, int dest) {
 
     //general_actual_free_slot in shm->messages[] HOLEN und UPDATEN
     // --> LESEN und SCHREIBEN in "shm" und  "shm->messages[]" <--
-    OSMP_wait(&dest_process->proc_free);
-    OSMP_wait(&param->shm_pointer->free_slots);
-    OSMP_wait(&param->shm_pointer->shm_mutex);
+    OSMP_sem_wait(&dest_process->proc_free);
+    OSMP_sem_wait(&param->shm_pointer->free_slots);
+    OSMP_sem_wait(&param->shm_pointer->shm_mutex);
         int my_msg_index = param->shm_pointer->actual_free_slot;
         struct message *my_msg_instance = &param->shm_pointer->messages[my_msg_index];
         param->shm_pointer->actual_free_slot = my_msg_instance->next_free_msg_slot;
@@ -102,8 +102,7 @@ int OSMP_Send(const void *buf, int count, OSMP_Datatype datatype, int dest) {
         memcpy(my_msg_instance->payload, buf, (unsigned long) my_msg_instance->msg_len);
 
 
-
-    OSMP_wait(&dest_process->proc_mutex);
+    OSMP_sem_wait(&dest_process->proc_mutex);
         //daten in process[dest] UPDATEN: in process[]->msg_slots[write_index] my_msg_index SCHREIBEN und write_index UPDATEN
         // --> LESEN und SCHREIBEN in "shm->processes[]" <--
         dest_process->write_index = dest_process->write_index % OSMP_MAX_MESSAGES_PROC;
@@ -119,8 +118,8 @@ int OSMP_Send(const void *buf, int count, OSMP_Datatype datatype, int dest) {
 int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *len) {
     struct process *reciever_process = &param ->shm_pointer->processes[param->rank];
 
-    OSMP_wait(&reciever_process->proc_full);
-        //OSMP_wait(&reciever_process->proc_mutex);
+    OSMP_sem_wait(&reciever_process->proc_full);
+        //OSMP_sem_wait(&reciever_process->proc_mutex);
         //msg_slot HOLEN [»] read_index && msg_slots[read_index] UPDATEN : from shm_process[][]
         //--> LESEN und SCHREIBEN in "shm->processes[]" <--
         reciever_process->read_index = reciever_process->read_index % OSMP_MAX_MESSAGES_PROC;
@@ -131,7 +130,7 @@ int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *le
         //nächste frei stellen UPDATEN
         // --> LESEN und SCHREIBEN in "shm" und  "shm->messages[]" <--
         struct message *my_msg_instance = &param->shm_pointer->messages[msg_slot];
-        OSMP_wait(&param->shm_pointer->shm_mutex);
+    OSMP_sem_wait(&param->shm_pointer->shm_mutex);
             param->shm_pointer->messages[msg_slot].next_free_msg_slot = param->shm_pointer->actual_free_slot;
             param->shm_pointer->actual_free_slot= msg_slot;
         OSMP_signal(&param->shm_pointer->shm_mutex);
@@ -164,7 +163,7 @@ int OSMP_Finalize(void) {
     }
     return OSMP_SUCCESS;
 }
-void OSMP_wait(sem_t *sem){
+void OSMP_sem_wait(sem_t *sem){
     int rv = sem_wait(sem);
     if(rv == -1){
         ERROR_ROUTINE(SEMERR)
@@ -186,7 +185,7 @@ int OSMP_Barrier(){
 //        OSMP_signal(&shm->barrier.sem_barrier);
 //    }
 //    else {
-//        OSMP_wait(&shm->barrier.sem_barrier);
+//        OSMP_sem_wait(&shm->barrier.sem_barrier);
 //        OSMP_signal(&shm->barrier.sem_barrier);
 //    }
 
@@ -210,7 +209,7 @@ int OSMP_Barrier(){
 
 int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root){
     if(param->rank == root){
-        OSMP_wait(&shm_handle->shm_mutex);
+        OSMP_sem_wait(&shm_handle->shm_mutex);
 
 
         struct message *msg = &param->shm_pointer->messages[OSMP_BCAST_SLOT];
@@ -239,3 +238,87 @@ int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root){
     OSMP_Barrier(); // Synchronizieren auf Nachrichten gelesen, falls mehrere Aufrufe sicherstellen das letzter Bcasat aufruf durch ist
     return OSMP_SUCCESS;
 }
+
+int OSMP_CreateRequest(OSMP_Request *request) {
+    *request = malloc (sizeof( request_data));
+    return OSMP_SUCCESS;
+}
+
+int OSMP_RemoveRequest(OSMP_Request *request) {
+    free(*request);
+    return OSMP_SUCCESS;
+}
+
+void* thread_send( void* arg){
+
+    OSMP_Request myrequest = (OSMP_Request ) arg;
+    myrequest->status= inprogress;
+    OSMP_Send(myrequest->buf, myrequest->count, myrequest->datatype, myrequest->dest);
+    myrequest->status=done;
+    pthread_exit(OSMP_SUCCESS);
+}
+
+void* thread_recv( void* arg){
+    OSMP_Request myrequest = (OSMP_Request ) arg;
+    myrequest->status= inprogress;
+    printf("\n from thread: i will start with recieving the msg\n");
+
+    OSMP_Recv(myrequest->buf, myrequest->count, myrequest->datatype, myrequest->source,  myrequest->len);
+    printf("\n from thread: im done with recieving the msg\n");
+    myrequest->status=done;
+    pthread_exit(OSMP_SUCCESS);
+}
+
+int OSMP_Isend(const void *buf, int count, OSMP_Datatype datatype, int dest, OSMP_Request request){
+    request->buf = buf;
+    request->count = count;
+    request->datatype = datatype;
+    request->dest = dest;
+    printf("\ndest ist : %d\n", request->dest);
+    pthread_create(&request->tid, NULL, thread_send, request);
+    return OSMP_SUCCESS;
+}
+
+int OSMP_Irecv(void *buf, int count, OSMP_Datatype datatype, int *source, int *len, OSMP_Request request)  {
+    request->buf = buf;
+    request->count = count;
+    request->datatype = datatype;
+    request->source = source;
+    request->len = len;
+
+    pthread_create( &request->tid, NULL, thread_recv, request);
+    return OSMP_SUCCESS;
+}
+
+int OSMP_Test(OSMP_Request request, int *flag){
+    *flag= request->status;
+    return OSMP_SUCCESS;
+}
+
+int OSMP_Wait(OSMP_Request request) {
+    if(pthread_join(request->tid, NULL))
+        return OSMP_ERROR;
+    return OSMP_SUCCESS;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

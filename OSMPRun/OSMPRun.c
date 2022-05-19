@@ -122,7 +122,7 @@ void initChild(struct shared_memory *mem, int rank)
 }
 
 void initMemory(struct shared_memory *mem){
-    sem_init(&mem->belegte_slots, 1, 0);
+    //sem_init(&mem->belegte_slots, 1, 0);
     sem_init(&mem->free_slots, 1, OSMP_MAX_SLOTS-1);
     sem_init(&mem->shm_mutex, 1 , 1);
     //Broadcast mit semaphoren
