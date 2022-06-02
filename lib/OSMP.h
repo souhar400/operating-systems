@@ -57,6 +57,7 @@ typedef enum {
 //eine Datenstruktur, die später verwendet werden kann, um abzufragen, ob die Operation abgeschlossen ist
 typedef struct {
     int status;
+    int retVal;
     pthread_t tid;
     void *buf;
     int count;

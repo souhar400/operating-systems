@@ -1,4 +1,4 @@
-//
+﻿//
 // Created by studi on 19.04.22.
 //
 
@@ -253,7 +253,8 @@ void* thread_send( void* arg){
 
     OSMP_Request myrequest = (OSMP_Request ) arg;
     myrequest->status= inprogress;
-    OSMP_Send(myrequest->buf, myrequest->count, myrequest->datatype, myrequest->dest);
+    int rv = OSMP_Send(myrequest->buf, myrequest->count, myrequest->datatype, myrequest->dest);
+    myrequest->retVal = rv;
     myrequest->status=done;
     pthread_exit(OSMP_SUCCESS);
 }
@@ -261,10 +262,8 @@ void* thread_send( void* arg){
 void* thread_recv( void* arg){
     OSMP_Request myrequest = (OSMP_Request ) arg;
     myrequest->status= inprogress;
-    printf("\n from thread: i will start with recieving the msg\n");
-
-    OSMP_Recv(myrequest->buf, myrequest->count, myrequest->datatype, myrequest->source,  myrequest->len);
-    printf("\n from thread: im done with recieving the msg\n");
+    int rv = OSMP_Recv(myrequest->buf, myrequest->count, myrequest->datatype, myrequest->source,  myrequest->len);
+    myrequest->retVal = rv;
     myrequest->status=done;
     pthread_exit(OSMP_SUCCESS);
 }
@@ -274,7 +273,6 @@ int OSMP_Isend(const void *buf, int count, OSMP_Datatype datatype, int dest, OSM
     request->count = count;
     request->datatype = datatype;
     request->dest = dest;
-    printf("\ndest ist : %d\n", request->dest);
     pthread_create(&request->tid, NULL, thread_send, request);
     return OSMP_SUCCESS;
 }
@@ -296,7 +294,7 @@ int OSMP_Test(OSMP_Request request, int *flag){
 }
 
 int OSMP_Wait(OSMP_Request request) {
-    if(pthread_join(request->tid, NULL))
+    if(pthread_join(request->tid, NULL) || request->retVal == OSMP_ERROR)
         return OSMP_ERROR;
     return OSMP_SUCCESS;
 }
