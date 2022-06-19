@@ -177,33 +177,24 @@ void OSMP_signal(sem_t *sem){
 
 }
 int OSMP_Barrier(){
-    //Broadcast mit semaphoren
-//    struct shared_memory *shm = param->shm_pointer;
-//    if(shm->barrier.count != shm->size) shm->barrier.count++;
-//
-//    if(shm->barrier.count == shm->size){
-//        OSMP_signal(&shm->barrier.sem_barrier);
-//    }
-//    else {
-//        OSMP_sem_wait(&shm->barrier.sem_barrier);
-//        OSMP_signal(&shm->barrier.sem_barrier);
-//    }
-
-    //Broadcast mit pthread_barrier
-    //pthread_barrier_wait(&param->shm_pointer->barrier);
-
-    //Broadcast mit Condition Variables
-
+    int rv;
     pthread_mutex_lock(&shm_handle->cond_barrier.bcast_mutex);
     shm_handle->cond_barrier.cond--;
+
     if(shm_handle->cond_barrier.cond == 0){
-        pthread_cond_broadcast(&shm_handle->cond_barrier.bcast_cond);
+        shm_handle->cond_barrier.cond = shm_handle->size;
+        rv = pthread_mutex_unlock(&shm_handle->cond_barrier.bcast_mutex);
+        if(rv != 0) ERROR_ROUTINE(BARRIER_ERROR)
+        rv = pthread_cond_broadcast(&shm_handle->cond_barrier.bcast_cond);
+        if(rv != 0) ERROR_ROUTINE(BARRIER_ERROR)
+
     }
     else {
-        pthread_cond_wait(&shm_handle->cond_barrier.bcast_cond, &shm_handle->cond_barrier.bcast_mutex);
+        rv = pthread_cond_wait(&shm_handle->cond_barrier.bcast_cond, &shm_handle->cond_barrier.bcast_mutex);
+        if(rv != 0) ERROR_ROUTINE(BARRIER_ERROR)
+        rv = pthread_mutex_unlock(&shm_handle->cond_barrier.bcast_mutex);
+        if(rv != 0) ERROR_ROUTINE(BARRIER_ERROR)
     }
-    shm_handle->cond_barrier.cond = shm_handle->size;
-    pthread_mutex_unlock(&shm_handle->cond_barrier.bcast_mutex);
     return OSMP_SUCCESS;
 }
 
@@ -221,18 +212,14 @@ int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root){
         OSMP_signal(&param->shm_pointer->shm_mutex);
 
         OSMP_Barrier();
-
-
-
-        //Broadcast mit pthread_barrier
-        //pthread_barrier_wait(&param->shm_pointer->barrier);
     }
     else{
-        //Broadcast mit pthread_barrier
-        //pthread_barrier_wait(&param->shm_pointer->barrier);
+
         OSMP_Barrier();
         struct message *msg = &param->shm_pointer->messages[OSMP_BCAST_SLOT];
-        realloc(buf, (unsigned long) msg->msg_len);
+        void* test;
+        test = realloc(buf, (unsigned long) msg->msg_len);
+        printf("%s", (char*) test);
         memcpy(buf, msg->payload, (unsigned long) msg->msg_len);
     }
     OSMP_Barrier(); // Synchronizieren auf Nachrichten gelesen, falls mehrere Aufrufe sicherstellen das letzter Bcasat aufruf durch ist
@@ -269,7 +256,7 @@ void* thread_recv( void* arg){
 }
 
 int OSMP_Isend(const void *buf, int count, OSMP_Datatype datatype, int dest, OSMP_Request request){
-    request->buf = buf;
+    request->buf = (void *)buf;
     request->count = count;
     request->datatype = datatype;
     request->dest = dest;

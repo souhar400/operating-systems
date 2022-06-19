@@ -32,26 +32,26 @@
 #define UNLINKERR 16
 #define MUNMAPERR 17
 #define SEMERR 18
-#define PTHREAD_BARRIER_ERROR 19
+#define BARRIER_ERROR 19
 
 #define OSMP_SHM_NAME "OSMP_sh_mem"
-#define ERROR_ROUTINE(code) fprintf(stderr, "%s\n", strerror(errno)); \
-                                    exit(code);
+#define ERROR_ROUTINE(code) {fprintf(stderr, "%s\n", strerror(errno)); \
+                                    exit(code);}
 //typedef void* OSMP_Request;
 
 
 //Aufzählung für den Datentyp
 typedef enum {
-    osmp_short,
-    osmp_int,
-    osmp_long,
+    osmp_short= sizeof(short),
+    osmp_int = sizeof(int),
+    osmp_long = sizeof(long),
     osmp_unsigned_char = sizeof(unsigned char),
-    osmp_unsigned_short,
-    osmp_unsigned,
-    osmp_unsigned_long,
-    osmp_float,
-    osmp_double,
-    osmp_byte,
+    osmp_unsigned_short = sizeof(ushort),
+    osmp_unsigned = sizeof(unsigned int),
+    osmp_unsigned_long = sizeof(unsigned long),
+    osmp_float = sizeof(float),
+    osmp_double = sizeof(double),
+    osmp_byte = 1,
 } OSMP_Datatype;
 
 //eine Datenstruktur, die später verwendet werden kann, um abzufragen, ob die Operation abgeschlossen ist
@@ -68,14 +68,6 @@ typedef struct {
 }request_data;
 
 typedef request_data* OSMP_Request;
-
-
-
-
-struct barrier{
-    volatile int count;
-    sem_t sem_barrier;
-};
 
 typedef struct{
     pthread_mutex_t bcast_mutex;
