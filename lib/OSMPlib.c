@@ -6,6 +6,7 @@
 
 
 struct parameters *param;
+int setup =-1;
 #define shm_handle param->shm_pointer
 
 int OSMP_Init(const int *argc, char **argv) {
@@ -44,11 +45,16 @@ int OSMP_Init(const int *argc, char **argv) {
     param->size = (int) mem->size;
     param->shm_pointer = addr;
     param->rank = (int) strtol(argv[1], NULL, 10);
-
+    setup= 1;
     return OSMP_SUCCESS;
 }
 
 int OSMP_Size(int *size) {
+    if( setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
+
     if (param->size <= 0) {
         return OSMP_ERROR;
     }
@@ -59,16 +65,28 @@ int OSMP_Size(int *size) {
 
 
 int OSMP_Rank(int *rank) {
-    if (param->rank < 0) {
+    if( setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
         return OSMP_ERROR;
     }
+
+    if (param->rank < 0 )
+        return OSMP_ERROR;
+
     *rank = param->rank;
     return OSMP_SUCCESS;
 
 }
 
 int OSMP_Send(const void *buf, int count, OSMP_Datatype datatype, int dest) {
+
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     struct process *dest_process = &param->shm_pointer->processes[dest];
+
+
 
     //prüfen ob destination ist gültig
     if(dest >= param->size || dest<0 || dest == param->rank) {
@@ -116,7 +134,15 @@ int OSMP_Send(const void *buf, int count, OSMP_Datatype datatype, int dest) {
 }
 
 int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *len) {
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     struct process *reciever_process = &param ->shm_pointer->processes[param->rank];
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
 
     OSMP_sem_wait(&reciever_process->proc_full);
         //OSMP_sem_wait(&reciever_process->proc_mutex);
@@ -155,7 +181,10 @@ int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *le
 }
 
 int OSMP_Finalize(void) {
-
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     struct shared_memory *mem = (struct shared_memory *) param->shm_pointer;
     if (munmap(param->shm_pointer, (size_t) mem->shm_size) == -1) {
         fprintf(stderr, "%s\n", strerror(errno));
@@ -164,12 +193,20 @@ int OSMP_Finalize(void) {
     return OSMP_SUCCESS;
 }
 void OSMP_sem_wait(sem_t *sem){
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return;
+    }
     int rv = sem_wait(sem);
     if(rv == -1){
         ERROR_ROUTINE(SEMERR)
     }
 }
 void OSMP_signal(sem_t *sem){
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return;
+    }
     int rv = sem_post(sem);
     if(rv == -1){
         ERROR_ROUTINE(SEMERR)
@@ -177,6 +214,10 @@ void OSMP_signal(sem_t *sem){
 
 }
 int OSMP_Barrier(){
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     int rv;
     pthread_mutex_lock(&shm_handle->cond_barrier.bcast_mutex);
     shm_handle->cond_barrier.cond--;
@@ -200,6 +241,10 @@ int OSMP_Barrier(){
 
 int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root){
     if(param->rank == root){
+        if(setup==-1) {
+            fprintf(stderr, "Process : Shared memory is not initialized");
+            return OSMP_ERROR;
+        }
         OSMP_sem_wait(&shm_handle->shm_mutex);
 
 
@@ -227,17 +272,28 @@ int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root){
 }
 
 int OSMP_CreateRequest(OSMP_Request *request) {
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     *request = malloc (sizeof( request_data));
     return OSMP_SUCCESS;
 }
 
 int OSMP_RemoveRequest(OSMP_Request *request) {
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     free(*request);
     return OSMP_SUCCESS;
 }
 
 void* thread_send( void* arg){
-
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     OSMP_Request myrequest = (OSMP_Request ) arg;
     myrequest->status= inprogress;
     int rv = OSMP_Send(myrequest->buf, myrequest->count, myrequest->datatype, myrequest->dest);
@@ -247,6 +303,10 @@ void* thread_send( void* arg){
 }
 
 void* thread_recv( void* arg){
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     OSMP_Request myrequest = (OSMP_Request ) arg;
     myrequest->status= inprogress;
     int rv = OSMP_Recv(myrequest->buf, myrequest->count, myrequest->datatype, myrequest->source,  myrequest->len);
@@ -256,6 +316,10 @@ void* thread_recv( void* arg){
 }
 
 int OSMP_Isend(const void *buf, int count, OSMP_Datatype datatype, int dest, OSMP_Request request){
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     request->buf = (void *)buf;
     request->count = count;
     request->datatype = datatype;
@@ -265,6 +329,10 @@ int OSMP_Isend(const void *buf, int count, OSMP_Datatype datatype, int dest, OSM
 }
 
 int OSMP_Irecv(void *buf, int count, OSMP_Datatype datatype, int *source, int *len, OSMP_Request request)  {
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     request->buf = buf;
     request->count = count;
     request->datatype = datatype;
@@ -276,11 +344,19 @@ int OSMP_Irecv(void *buf, int count, OSMP_Datatype datatype, int *source, int *l
 }
 
 int OSMP_Test(OSMP_Request request, int *flag){
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     *flag= request->status;
     return OSMP_SUCCESS;
 }
 
 int OSMP_Wait(OSMP_Request request) {
+    if(setup==-1) {
+        fprintf(stderr, "Process : Shared memory is not initialized");
+        return OSMP_ERROR;
+    }
     if(pthread_join(request->tid, NULL) || request->retVal == OSMP_ERROR)
         return OSMP_ERROR;
     return OSMP_SUCCESS;

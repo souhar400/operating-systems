@@ -106,7 +106,14 @@ int main(int argc, char *argv[]){
         ERROR_ROUTINE(UNLINKERR)
     }
 
+    sem_destroy(&mem->free_slots);
+    sem_destroy(&mem->shm_mutex);
 
+    for (int i = 0; i < numProc; i++) {
+        sem_destroy(&mem->processes[i].proc_mutex);
+        sem_destroy(&mem->processes[i].proc_full);
+        sem_destroy(&mem->processes[i].proc_free);
+    }
 }
 
 

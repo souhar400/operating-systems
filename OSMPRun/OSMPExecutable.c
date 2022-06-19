@@ -6,7 +6,7 @@
 
 int main(int argc, char *argv[]) {
     int rank = 0, size = 0;
-    OSMP_Init(&argc, argv);
+    //OSMP_Init(&argc, argv);
     OSMP_Rank(&rank);
     OSMP_Size(&size);
     //printf("RANK %d \n", rank);
@@ -25,6 +25,7 @@ int main(int argc, char *argv[]) {
         char* bufin = "hey diese Nachricht ist von 0 an 1";
         OSMP_Send(bufin,strlen(bufin), osmp_unsigned_char, 1);
         printf("Senden beendet von 0 an 1\n");
+        printf("... 0 zu Ende\n");
 
     }
 
@@ -47,6 +48,9 @@ int main(int argc, char *argv[]) {
 
         OSMP_Send(bufin,strlen(bufin), osmp_unsigned_char, 1);
         printf("Senden beendet von 2 an 1\n");
+
+        printf("... 2 zu Ende\n");
+
     }
 
     // 3 --> 1 : HALLO
@@ -69,6 +73,7 @@ int main(int argc, char *argv[]) {
 
 
         printf("Senden beendet von 3 an 1\n");
+        printf("... 3 zu Ende\n");
 
     }
 
@@ -85,6 +90,7 @@ int main(int argc, char *argv[]) {
         char* bufin = "hey diese Nachricht ist von 4 an 1";
         OSMP_Send(bufin,strlen(bufin), osmp_unsigned_char, 1);
         printf("Senden beendet von 4 an 1\n");
+        printf("... 4 zu Ende\n");
 
     }
     // 5 --> 1
@@ -103,6 +109,7 @@ int main(int argc, char *argv[]) {
         bufin = "hey diese Nachricht ist von 5 an 2";
         OSMP_Send(bufin,strlen(bufin), osmp_unsigned_char, 2);
         printf("Senden beendet von 5 an 2\n");
+        printf("... 5 zu Ende\n");
 
     }
 
@@ -145,6 +152,8 @@ int main(int argc, char *argv[]) {
 
         OSMP_Recv(bufout, 64, osmp_unsigned_char, &source, &len);
         printf("OSMP process %d received %d byte from %d [%s] \n", rank, len, source, bufout);
+        printf("... 1 zu Ende\n");
+
     }
 
     OSMP_Finalize();
