@@ -217,9 +217,9 @@ int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root){
 
         OSMP_Barrier();
         struct message *msg = &param->shm_pointer->messages[OSMP_BCAST_SLOT];
-        void* test;
-        test = realloc(buf, (unsigned long) msg->msg_len);
-        printf("%s", (char*) test);
+        void* rv;
+        rv = realloc(buf, (unsigned long) msg->msg_len);
+        if(rv == NULL) ERROR_ROUTINE(OSMP_ERROR)
         memcpy(buf, msg->payload, (unsigned long) msg->msg_len);
     }
     OSMP_Barrier(); // Synchronizieren auf Nachrichten gelesen, falls mehrere Aufrufe sicherstellen das letzter Bcasat aufruf durch ist
