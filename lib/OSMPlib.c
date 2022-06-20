@@ -150,6 +150,10 @@ int OSMP_Recv(void *buf, int count, OSMP_Datatype datatype, int *source, int *le
         //--> LESEN und SCHREIBEN in "shm->processes[]" <--
         reciever_process->read_index = reciever_process->read_index % OSMP_MAX_MESSAGES_PROC;
         int msg_slot = reciever_process->msg_slots[reciever_process->read_index];
+        if(param->shm_pointer->messages[msg_slot].elt_datentyp != datatype){
+            fprintf(stderr, "wrong Datatype on receive");
+            return OSMP_ERROR;
+        }
         //reciever_process->msg_slots[reciever_process->read_index] =-1;
         reciever_process->read_index++;
 
@@ -262,6 +266,11 @@ int OSMP_Bcast(void *buf, int count, OSMP_Datatype datatype, int root){
 
         OSMP_Barrier();
         struct message *msg = &param->shm_pointer->messages[OSMP_BCAST_SLOT];
+        if(msg->elt_datentyp != datatype){
+            fprintf(stderr, "Falscher Datentyp\n");
+            OSMP_Barrier();
+            return OSMP_ERROR;
+        }
         void* rv;
         rv = realloc(buf, (unsigned long) msg->msg_len);
         if(rv == NULL) ERROR_ROUTINE(OSMP_ERROR)

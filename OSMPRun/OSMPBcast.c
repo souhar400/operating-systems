@@ -15,9 +15,9 @@ int main(int argc, char** argv){
         OSMP_Bcast(buf, strlen(buf), osmp_unsigned_char, root);
     }
     else{
-        char *buf = malloc(1024);
-        OSMP_Bcast(buf, 0, osmp_unsigned_char, root);
-        printf("%s gelesen von Prozess %d\n", buf, rank);
+        unsigned int *buf = malloc(1024);
+        int rv = OSMP_Bcast(buf, 0, osmp_unsigned, root);
+        if(rv == OSMP_SUCCESS)printf("%u gelesen von Prozess %d\n", *buf, rank);
     }
 
     OSMP_Finalize();

@@ -74,7 +74,7 @@ int main(int argc, char *argv[]){
             execv(argv[2], params);
             ERROR_ROUTINE(EXECERR)
         }
-        sleep(1);
+        //sleep(1);
     }
 
     pid_t w;
