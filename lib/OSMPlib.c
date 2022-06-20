@@ -190,6 +190,9 @@ int OSMP_Finalize(void) {
         return OSMP_ERROR;
     }
     struct shared_memory *mem = (struct shared_memory *) param->shm_pointer;
+    OSMP_sem_wait(&mem->shm_mutex);
+    mem->size--;
+    OSMP_signal(&mem->shm_mutex);
     if (munmap(param->shm_pointer, (size_t) mem->shm_size) == -1) {
         fprintf(stderr, "%s\n", strerror(errno));
         return OSMP_ERROR;
@@ -224,6 +227,9 @@ int OSMP_Barrier(){
     }
     int rv;
     pthread_mutex_lock(&shm_handle->cond_barrier.bcast_mutex);
+    if(shm_handle->size <  shm_handle->cond_barrier.cond){
+        shm_handle->cond_barrier.cond = shm_handle->size;
+    }
     shm_handle->cond_barrier.cond--;
 
     if(shm_handle->cond_barrier.cond == 0){

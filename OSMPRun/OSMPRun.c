@@ -109,6 +109,9 @@ int main(int argc, char *argv[]){
     sem_destroy(&mem->free_slots);
     sem_destroy(&mem->shm_mutex);
 
+    pthread_mutex_destroy(&mem->cond_barrier.bcast_mutex);
+    pthread_cond_destroy(&mem->cond_barrier.bcast_cond);
+
     for (int i = 0; i < numProc; i++) {
         sem_destroy(&mem->processes[i].proc_mutex);
         sem_destroy(&mem->processes[i].proc_full);
@@ -132,17 +135,7 @@ void initMemory(struct shared_memory *mem){
     //sem_init(&mem->belegte_slots, 1, 0);
     sem_init(&mem->free_slots, 1, OSMP_MAX_SLOTS-1);
     sem_init(&mem->shm_mutex, 1 , 1);
-    //Broadcast mit semaphoren
-    //sem_init(&mem->barrier.sem_barrier, 1, 0);
-    //mem->barrier.count = 0;
 
-    //Broadcast mit pthread_barrier
-    //pthread_barrierattr_t attr;
-    //pthread_barrierattr_init(&attr);
-    //pthread_barrierattr_setpshared(&attr, PTHREAD_PROCESS_SHARED);
-    //pthread_barrier_init(&mem->barrier, &attr, (unsigned int) mem->size);
-
-    //Broadcast mit Condition Variables
     pthread_mutexattr_t mutexattr;
     pthread_condattr_t condattr;
 

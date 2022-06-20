@@ -1,6 +1,4 @@
-//
-// Created by lukas on 01.05.22.
-//
+
 #include "lib/OSMPlib.h"
 int main(int argc, char** argv){
     int rank = 0, size = 0;
